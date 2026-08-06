@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>答案之书 · Book of Answers</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Georgia", "Songti SC", "SimSun", serif;
+      background: radial-gradient(circle at 20% 20%, #2c1654 0%, #15082b 45%, #0a0418 100%);
+      min-height: 100vh;
+      padding: 36px 20px 60px;
+      color: #ece6f5;
+      overflow-x: hidden;
+    }
+    .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .star {
+      position: absolute; width: 2px; height: 2px; background: #fff;
+      border-radius: 50%; opacity: 0.6; animation: twinkle 3s infinite ease-in-out;
+    }
+    @keyframes twinkle { 0%,100%{opacity:.15} 50%{opacity:.9} }
+
+    .container { max-width: 760px; margin: 0 auto; position: relative; z-index: 1; }
+
+    .header { text-align: center; margin-bottom: 28px; }
+    .title-frame {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; margin-bottom: 12px;
+    }
+    .title-frame .frame-line {
+      flex: 0 1 90px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(201,168,255,0.7), transparent);
+    }
+    .title-frame .frame-glyph { color: #c9a8ff; font-size: 1rem; text-shadow: 0 0 10px rgba(167,120,255,0.7); }
+    .title-frame .title-en {
+      font-family: "Georgia", serif;
+      font-size: 0.95rem; letter-spacing: 4px;
+      color: #d6b8ff;
+      text-shadow: 0 0 14px rgba(167,120,255,0.6);
+      white-space: nowrap;
+    }
+    .header h1 {
+      font-size: 2.4rem; margin-bottom: 6px;
+      background: linear-gradient(90deg, #fff, #d6b8ff, #fff);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .header .subtitle { color: #b9a7d8; font-size: 1rem; letter-spacing: 2px; }
+    .header .emoji-row { font-size: 1.6rem; margin-top: 8px; }
+
+    .ask-bar {
+      display: flex; gap: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(201,168,255,0.25);
+      padding: 14px;
+      border-radius: 16px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      margin-bottom: 18px;
+    }
+    .ask-bar input {
+      flex: 1; background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(201,168,255,0.3);
+      border-radius: 10px; padding: 13px 16px;
+      font-size: 1rem; color: #fff; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+    .ask-bar input::placeholder { color: #8a7aa8; }
+    .ask-bar input:focus {
+      border-color: #a878ff;
+      box-shadow: 0 0 0 3px rgba(168,120,255,0.2);
+    }
+    .ask-bar button {
+      border: none; cursor: pointer;
+      background: linear-gradient(135deg, #7b3ff2, #b06bff);
+      color: #fff; padding: 13px 28px;
+      border-radius: 10px; font-size: 1rem; font-weight: 600;
+      transition: transform 0.15s, box-shadow 0.2s; font-family: inherit;
+    }
+    .ask-bar button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(123,63,242,0.5);
+    }
+    .ask-bar button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status {
+      text-align: center; color: #c9a8ff; font-size: 0.95rem;
+      min-height: 22px; margin-bottom: 14px;
+    }
+
+    /* 等待动画：翻书中 */
+    .waiting {
+      display: none; text-align: center; padding: 50px 20px;
+    }
+    .waiting.active { display: block; }
+    .book-loader {
+      display: inline-block; font-size: 4rem;
+      animation: flip 1.2s infinite ease-in-out;
+    }
+    @keyframes flip {
+      0%,100% { transform: rotateY(0deg); }
+      50% { transform: rotateY(180deg); }
+    }
+    .waiting-text {
+      margin-top: 18px; color: #c9a8ff; font-size: 1.1rem; letter-spacing: 2px;
+    }
+    .dots span {
+      display: inline-block; opacity: 0.3;
+      animation: dotpulse 1.4s infinite;
+    }
+    .dots span:nth-child(2){animation-delay:.2s}
+    .dots span:nth-child(3){animation-delay:.4s}
+    @keyframes dotpulse { 0%,100%{opacity:.2} 50%{opacity:1} }
+
+    /* 答案卡片 */
+    .answer-card {
+      display: none;
+      background: linear-gradient(135deg, rgba(123,63,242,0.18), rgba(20,8,40,0.6));
+      border: 1px solid rgba(201,168,255,0.35);
+      border-radius: 18px; padding: 36px 30px;
+      text-align: center; margin-bottom: 26px;
+      box-shadow: 0 12px 40px rgba(123,63,242,0.3);
+      animation: reveal 0.6s ease;
+    }
+    .answer-card.active { display: block; }
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(20px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .answer-card .q-label { color: #9a86c0; font-size: 0.85rem; letter-spacing: 2px; margin-bottom: 8px; }
+    .answer-card .question { color: #d6c5f0; font-size: 1.05rem; margin-bottom: 22px; font-style: italic; }
+    .answer-card .ornament { font-size: 1.5rem; color: #c9a8ff; margin-bottom: 14px; }
+    .answer-card .answer {
+      font-size: 1.7rem; font-weight: 600; line-height: 1.5;
+      background: linear-gradient(90deg, #fff, #e4d0ff);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      text-shadow: 0 0 20px rgba(201,168,255,0.3);
+    }
+    .answer-card .meta { color: #7a6a98; font-size: 0.8rem; margin-top: 18px; }
+
+    /* 历史记录 */
+    .history { margin-top: 10px; }
+    .history-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px;
+    }
+    .history-head h2 {
+      font-size: 1.1rem; color: #c9a8ff; font-weight: 600;
+    }
+    .history-head button {
+      background: transparent; border: 1px solid rgba(201,168,255,0.3);
+      color: #c9a8ff; padding: 5px 14px; border-radius: 8px;
+      cursor: pointer; font-size: 0.82rem; transition: background 0.2s; font-family: inherit;
+    }
+    .history-head button:hover { background: rgba(201,168,255,0.15); }
+    .history-list { display: flex; flex-direction: column; gap: 10px; }
+    .history-item {
+      background: rgba(255,255,255,0.04);
+      border-left: 3px solid #7b3ff2;
+      border-radius: 8px; padding: 12px 16px;
+      animation: fadein 0.3s ease;
+    }
+    @keyframes fadein { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+    .history-item .h-q { color: #b9a7d8; font-size: 0.88rem; margin-bottom: 4px; }
+    .history-item .h-a { color: #ece6f5; font-size: 1rem; }
+    .history-item .h-time { color: #6a5a88; font-size: 0.72rem; margin-top: 6px; text-align: right; }
+    .history-empty {
+      text-align: center; color: #7a6a98; padding: 30px 20px; font-size: 0.92rem;
+      border: 1px dashed rgba(201,168,255,0.2); border-radius: 10px;
+    }
+
+    .footer {
+      text-align: center; color: #6a5a88; font-size: 0.78rem;
+      margin-top: 40px; line-height: 1.6;
+    }
+
+    @media (max-width: 540px) {
+      .ask-bar { flex-direction: column; }
+      .header h1 { font-size: 1.9rem; }
+      .answer-card .answer { font-size: 1.35rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars" id="stars"></div>
+  <div class="container">
+    <div class="header">
+      <div class="title-frame">
+        <span class="frame-line"></span>
+        <span class="frame-glyph">✦</span>
+        <span class="title-en">BOOK OF ANSWERS</span>
+        <span class="frame-glyph">✦</span>
+        <span class="frame-line"></span>
+      </div>
+      <h1>📖 答案之书</h1>
+      <p class="subtitle">翻 开 你 的 神 秘 之 书</p>
+      <div class="emoji-row">🔮 ✨ 🌙 ⭐ 🔮</div>
+    </div>
+
+    <div class="ask-bar">
+      <input type="text" id="questionInput" placeholder="在心里想着你的问题，然后输入它..." autocomplete="off">
+      <button id="askBtn" onclick="askBook()">🔮 翻开答案</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="waiting" id="waiting">
+      <div class="book-loader">📖</div>
+      <div class="waiting-text">正在翻书中<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+    </div>
+
+    <div class="answer-card" id="answerCard">
+      <div class="q-label">— 你的问题 —</div>
+      <div class="question" id="questionText"></div>
+      <div class="ornament">✦ ✦ ✦</div>
+      <div class="answer" id="answerText"></div>
+      <div class="meta" id="answerMeta"></div>
+    </div>
+
+    <div class="history">
+      <div class="history-head">
+        <h2>📜 历史记录</h2>
+        <button onclick="clearHistory()">清空记录</button>
+      </div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+
+    <div class="footer">
+      答案之书仅供娱乐参考 · 真正的答案在你心中<br>
+      Powered by uapis.cn · Built with Flask + requests
+    </div>
+  </div>
+
+  <script>
+    const questionInput = document.getElementById('questionInput');
+    const askBtn = document.getElementById('askBtn');
+    const statusEl = document.getElementById('status');
+    const waitingEl = document.getElementById('waiting');
+    const answerCard = document.getElementById('answerCard');
+    const questionText = document.getElementById('questionText');
+    const answerText = document.getElementById('answerText');
+    const answerMeta = document.getElementById('answerMeta');
+    const historyList = document.getElementById('historyList');
+
+    const STORAGE_KEY = 'answerbook_history';
+
+    // 生成星空背景
+    function makeStars() {
+      const stars = document.getElementById('stars');
+      let html = '';
+      for (let i = 0; i < 60; i++) {
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const delay = (Math.random() * 3).toFixed(2);
+        const size = Math.random() < 0.2 ? 3 : 2;
+        html += `<span class="star" style="left:${x}%;top:${y}%;width:${size}px;height:${size}px;animation-delay:${delay}s"></span>`;
+      }
+      stars.innerHTML = html;
+    }
+    makeStars();
+
+    // 回车键触发询问
+    questionInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') askBook();
+    });
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function formatTime(ts) {
+      const d = new Date(ts);
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    // 读取历史记录
+    function loadHistory() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+      catch (e) { return []; }
+    }
+
+    // 保存历史记录
+    function saveHistory(list) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }
+
+    // 渲染历史记录列表
+    function renderHistory() {
+      const list = loadHistory();
+      if (!list.length) {
+        historyList.innerHTML = '<div class="history-empty">暂无历史记录，开始你的第一次提问吧 ✨</div>';
+        return;
+      }
+      historyList.innerHTML = list.map(item => `
+        <div class="history-item">
+          <div class="h-q">❓ ${escapeHtml(item.question)}</div>
+          <div class="h-a">💬 ${escapeHtml(item.answer)}</div>
+          <div class="h-time">${escapeHtml(formatTime(item.time))}</div>
+        </div>`).join('');
+    }
+
+    // 清空历史记录
+    function clearHistory() {
+      if (!loadHistory().length) return;
+      if (confirm('确定要清空所有历史记录吗？')) {
+        localStorage.removeItem(STORAGE_KEY);
+        renderHistory();
+        statusEl.textContent = '历史记录已清空';
+      }
+    }
+
+    // 调用答案之书
+    async function askBook() {
+      const question = questionInput.value.trim();
+      if (!question) {
+        statusEl.textContent = '请先输入你的问题 🙏';
+        questionInput.focus();
+        return;
+      }
+
+      askBtn.disabled = true;
+      statusEl.textContent = '';
+      answerCard.classList.remove('active');
+      waitingEl.classList.add('active');
+
+      try {
+        const resp = await fetch('/api/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'question=' + encodeURIComponent(question)
+        });
+        const data = await resp.json();
+
+        waitingEl.classList.remove('active');
+
+        if (!resp.ok || data.error) {
+          statusEl.textContent = data.error || '获取答案失败';
+          return;
+        }
+
+        // 展示答案
+        questionText.textContent = data.question;
+        answerText.textContent = data.answer;
+        answerMeta.textContent = '🔮 ' + formatTime(Date.now());
+        answerCard.classList.add('active');
+        statusEl.textContent = '答案已揭晓 ✨';
+
+        // 写入历史记录
+        const list = loadHistory();
+        list.unshift({ question: data.question, answer: data.answer, time: Date.now() });
+        if (list.length > 50) list.length = 50;
+        saveHistory(list);
+        renderHistory();
+      } catch (err) {
+        waitingEl.classList.remove('active');
+        statusEl.textContent = '网络请求失败，请检查连接';
+      } finally {
+        askBtn.disabled = false;
+        questionInput.value = '';
+        questionInput.focus();
+      }
+    }
+
+    // 初始化渲染历史记录
+    renderHistory();
+  </script>
+</body>
+</html>
