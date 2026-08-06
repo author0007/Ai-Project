@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI 计算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 14px 50px 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input[type="number"]:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-unit {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 14px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e8e8e8;
+        }
+
+        .result {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bmi-display {
+            text-align: center;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+
+        .bmi-value {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .bmi-category {
+            font-size: 18px;
+            font-weight: 500;
+            padding: 6px 16px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .bmi-status {
+            margin-top: 12px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .advice-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .advice-title {
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        .advice-list {
+            list-style: none;
+        }
+
+        .advice-list li {
+            padding: 8px 0;
+            color: #666;
+            font-size: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .advice-list li::before {
+            content: "✓";
+            color: #27ae60;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .error {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .history {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .history-title {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .history-list {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .history-info {
+            color: #666;
+        }
+
+        .history-bmi {
+            font-weight: 600;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 24px;
+                border-radius: 16px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .bmi-value {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💪 BMI 计算器</h1>
+        <p class="subtitle">输入身高体重，了解您的健康状况</p>
+
+        <form id="bmiForm">
+            <div class="form-group">
+                <label for="height">身高</label>
+                <div class="input-wrapper">
+                    <input type="number" id="height" placeholder="请输入身高" step="0.1" min="50" max="250" required>
+                    <span class="input-unit">cm</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="weight">体重</label>
+                <div class="input-wrapper">
+                    <input type="number" id="weight" placeholder="请输入体重" step="0.1" min="10" max="500" required>
+                    <span class="input-unit">kg</span>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">计算 BMI</button>
+                <button type="reset" class="btn btn-secondary" id="resetBtn">重置</button>
+            </div>
+        </form>
+
+        <div id="errorMsg" class="error" style="display: none;"></div>
+
+        <div class="result" id="result">
+            <div class="bmi-display" id="bmiDisplay">
+                <div class="bmi-value" id="bmiValue">--</div>
+                <div class="bmi-category" id="bmiCategory">--</div>
+                <div class="bmi-status" id="bmiStatus">--</div>
+            </div>
+
+            <div class="advice-section">
+                <div class="advice-title">📋 健康建议</div>
+                <ul class="advice-list" id="adviceList"></ul>
+            </div>
+        </div>
+
+        <div class="history" id="historySection" style="display: none;">
+            <div class="history-title">📊 计算历史</div>
+            <div class="history-list" id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        const historyData = [];
+
+        const form = document.getElementById('bmiForm');
+        const result = document.getElementById('result');
+        const errorMsg = document.getElementById('errorMsg');
+        const bmiDisplay = document.getElementById('bmiDisplay');
+        const bmiValue = document.getElementById('bmiValue');
+        const bmiCategory = document.getElementById('bmiCategory');
+        const bmiStatus = document.getElementById('bmiStatus');
+        const adviceList = document.getElementById('adviceList');
+        const historySection = document.getElementById('historySection');
+        const historyList = document.getElementById('historyList');
+
+        const categoryColors = {
+            '偏瘦': { bg: '#e3f2fd', text: '#1565c0' },
+            '正常': { bg: '#e8f5e9', text: '#2e7d32' },
+            '偏胖': { bg: '#fff3e0', text: '#e65100' },
+            '肥胖': { bg: '#ffebee', text: '#c62828' }
+        };
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.style.display = 'none';
+
+            const height = document.getElementById('height').value;
+            const weight = document.getElementById('weight').value;
+
+            if (!height || !weight) {
+                showError('请填写身高和体重');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ height, weight })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResult(data, height, weight);
+                    addToHistory(data, height, weight);
+                } else {
+                    showError(data.error);
+                }
+            } catch (err) {
+                showError('网络错误，请重试');
+            }
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            result.classList.remove('show');
+            errorMsg.style.display = 'none';
+            document.getElementById('historySection').style.display = 'none';
+        });
+
+        function displayResult(data, height, weight) {
+            result.classList.add('show');
+
+            bmiValue.textContent = data.bmi;
+            bmiCategory.textContent = data.category;
+            bmiStatus.textContent = data.advice.status;
+
+            const colors = categoryColors[data.category];
+            bmiDisplay.style.backgroundColor = colors.bg;
+            bmiDisplay.style.color = colors.text;
+            bmiCategory.style.backgroundColor = 'white';
+            bmiCategory.style.color = colors.text;
+
+            adviceList.innerHTML = '';
+            data.advice.tips.forEach(tip => {
+                const li = document.createElement('li');
+                li.textContent = tip;
+                adviceList.appendChild(li);
+            });
+        }
+
+        function addToHistory(data, height, weight) {
+            const record = {
+                height,
+                weight,
+                bmi: data.bmi,
+                category: data.category,
+                time: new Date().toLocaleTimeString('zh-CN', { hour12: false })
+            };
+
+            historyData.unshift(record);
+
+            if (historyData.length > 10) {
+                historyData.pop();
+            }
+
+            renderHistory();
+        }
+
+        function renderHistory() {
+            if (historyData.length === 0) {
+                historySection.style.display = 'none';
+                return;
+            }
+
+            historySection.style.display = 'block';
+            historyList.innerHTML = '';
+
+            historyData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `
+                    <span class="history-info">${item.time} | ${item.height}cm / ${item.weight}kg</span>
+                    <span class="history-bmi" style="color: ${getCategoryColor(item.category)}">BMI ${item.bmi} (${item.category})</span>
+                `;
+                historyList.appendChild(div);
+            });
+        }
+
+        function getCategoryColor(category) {
+            const colors = categoryColors[category];
+            return colors ? colors.text : '#666';
+        }
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

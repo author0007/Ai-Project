@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天气查询</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 30px 20px;
+      color: #333;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    .header {
+      text-align: center;
+      color: #fff;
+      margin-bottom: 30px;
+    }
+    .header h1 { font-size: 2.2rem; margin-bottom: 8px; }
+    .header p { opacity: 0.9; font-size: 1rem; }
+
+    .search-bar {
+      display: flex;
+      gap: 12px;
+      background: #fff;
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      margin-bottom: 24px;
+    }
+    .search-bar input {
+      flex: 1;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-bar input:focus { border-color: #667eea; }
+    .search-bar button {
+      border: none;
+      background: #667eea;
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .search-bar button:hover:not(:disabled) { background: #5568d3; }
+    .search-bar button:disabled { background: #aaa; cursor: not-allowed; }
+    .search-bar .clear-btn { background: #e74c3c; }
+    .search-bar .clear-btn:hover { background: #c0392b; }
+
+    .status {
+      text-align: center;
+      color: #fff;
+      font-size: 0.95rem;
+      min-height: 22px;
+      margin-bottom: 16px;
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      animation: fadein 0.3s ease;
+    }
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      border-bottom: 1px solid #f0f0f0;
+      padding-bottom: 14px;
+    }
+    .card-head .loc { font-size: 1.3rem; font-weight: 600; }
+    .card-head .prov { font-size: 0.85rem; color: #888; margin-top: 4px; }
+    .card-head .icon { font-size: 2.6rem; line-height: 1; }
+
+    .temp {
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 4px;
+    }
+    .temp small { font-size: 1.2rem; color: #888; font-weight: 400; }
+    .weather-desc { font-size: 1.1rem; color: #555; margin-bottom: 16px; }
+
+    .grid-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .info-item {
+      background: #f7f8fc;
+      padding: 10px 12px;
+      border-radius: 8px;
+    }
+    .info-item .label { font-size: 0.75rem; color: #999; }
+    .info-item .value { font-size: 1rem; font-weight: 500; margin-top: 2px; }
+
+    .report-time {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-top: 16px;
+      text-align: right;
+    }
+
+    .alerts { margin-top: 16px; }
+    .alert {
+      background: #fff5f5;
+      border-left: 4px solid #e74c3c;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-top: 8px;
+      font-size: 0.85rem;
+    }
+    .alert .alert-title { font-weight: 600; color: #c0392b; margin-bottom: 4px; }
+    .alert .alert-text { color: #666; line-height: 1.5; }
+
+    .error-card {
+      background: #fff5f5;
+      border-left: 4px solid #e74c3c;
+      color: #c0392b;
+    }
+    .error-card .err-city { font-weight: 600; margin-bottom: 4px; }
+
+    .empty {
+      text-align: center;
+      color: rgba(255,255,255,0.85);
+      padding: 60px 20px;
+      font-size: 1.05rem;
+    }
+
+    @media (max-width: 500px) {
+      .search-bar { flex-direction: column; }
+      .grid-info { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>天气查询</h1>
+      <p>输入城市名称，查询实时天气信息 · 支持连续查询多个城市</p>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" id="cityInput" placeholder="请输入城市名称，例如：北京、上海、广州" autocomplete="off">
+      <button id="queryBtn" onclick="queryWeather()">查询</button>
+      <button class="clear-btn" onclick="clearAll()">清空</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="results" id="results"></div>
+  </div>
+
+  <script>
+    const cityInput = document.getElementById('cityInput');
+    const queryBtn = document.getElementById('queryBtn');
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+
+    // 回车键触发查询
+    cityInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') queryWeather();
+    });
+
+    // 根据天气描述映射 emoji 图标
+    function weatherIcon(desc) {
+      if (!desc) return '🌤️';
+      const d = desc;
+      if (d.includes('晴')) return '☀️';
+      if (d.includes('多云')) return '⛅';
+      if (d.includes('阴')) return '☁️';
+      if (d.includes('雷')) return '⛈️';
+      if (d.includes('大雨') || d.includes('暴雨')) return '🌧️';
+      if (d.includes('雨')) return '🌦️';
+      if (d.includes('雪')) return '❄️';
+      if (d.includes('雾') || d.includes('霾')) return '🌫️';
+      if (d.includes('沙') || d.includes('尘')) return '🌪️';
+      return '🌤️';
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    // 渲染单张天气卡片
+    function renderCard(data) {
+      const loc = data.district ? `${data.city} · ${data.district}` : data.city;
+      const prov = data.province || '';
+      const icon = weatherIcon(data.weather);
+      const adcode = data.adcode ? ` · ${data.adcode}` : '';
+
+      let alertsHtml = '';
+      if (Array.isArray(data.alerts) && data.alerts.length) {
+        alertsHtml = '<div class="alerts">';
+        data.alerts.forEach(a => {
+          alertsHtml += `
+            <div class="alert">
+              <div class="alert-title">${escapeHtml(a.title || '')}（${escapeHtml(a.level || '')}）</div>
+              <div class="alert-text">${escapeHtml(a.text || '')}</div>
+            </div>`;
+        });
+        alertsHtml += '</div>';
+      }
+
+      return `
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="loc">${escapeHtml(loc)}</div>
+              <div class="prov">${escapeHtml(prov)}${adcode}</div>
+            </div>
+            <div class="icon">${icon}</div>
+          </div>
+          <div class="temp">${data.temperature ?? '--'}<small>°C</small></div>
+          <div class="weather-desc">${escapeHtml(data.weather || '--')}</div>
+          <div class="grid-info">
+            <div class="info-item">
+              <div class="label">湿度</div>
+              <div class="value">${data.humidity ?? '--'}%</div>
+            </div>
+            <div class="info-item">
+              <div class="label">风向</div>
+              <div class="value">${escapeHtml(data.wind_direction || '--')}</div>
+            </div>
+            <div class="info-item">
+              <div class="label">风力</div>
+              <div class="value">${escapeHtml(data.wind_power || '--')}</div>
+            </div>
+            <div class="info-item">
+              <div class="label">体感</div>
+              <div class="value">${data.feels_like ?? '--'}°C</div>
+            </div>
+          </div>
+          ${alertsHtml}
+          <div class="report-time">${escapeHtml(data.report_time || '')}</div>
+        </div>`;
+    }
+
+    // 渲染错误卡片
+    function renderErrorCard(city, message) {
+      return `
+        <div class="card error-card">
+          <div class="err-city">${escapeHtml(city)}</div>
+          <div>${escapeHtml(message)}</div>
+        </div>`;
+    }
+
+    async function queryWeather() {
+      const city = cityInput.value.trim();
+      if (!city) {
+        statusEl.textContent = '请输入城市名称';
+        return;
+      }
+
+      queryBtn.disabled = true;
+      statusEl.textContent = `正在查询「${city}」...`;
+
+      try {
+        const resp = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
+        const data = await resp.json();
+
+        if (!resp.ok || data.error) {
+          resultsEl.insertAdjacentHTML('afterbegin',
+            renderErrorCard(city, data.error || '查询失败'));
+          statusEl.textContent = `「${city}」查询失败`;
+        } else {
+          resultsEl.insertAdjacentHTML('afterbegin', renderCard(data));
+          statusEl.textContent = `「${city}」查询成功`;
+        }
+      } catch (err) {
+        resultsEl.insertAdjacentHTML('afterbegin',
+          renderErrorCard(city, '网络请求失败，请检查连接'));
+        statusEl.textContent = `「${city}」查询失败`;
+      } finally {
+        queryBtn.disabled = false;
+        cityInput.value = '';
+        cityInput.focus();
+      }
+    }
+
+    function clearAll() {
+      resultsEl.innerHTML = '';
+      statusEl.textContent = '';
+    }
+  </script>
+</body>
+</html>
